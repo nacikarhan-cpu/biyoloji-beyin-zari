@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İnsan Beyninin Kısımları - Naci Karhan</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --bg-color: #ecf0f1;
+            --text-color: #34495e;
+            --timer-bg: #34495e;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Header Alanı */
+        header {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .instruction {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        /* Kronometre */
+        .timer-badge {
+            background-color: var(--timer-bg);
+            color: #f1c40f;
+            padding: 10px 25px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 4px 0 #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Oyun Alanı Düzeni */
+        .game-container {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 50px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+            max-width: 1200px;
+        }
+
+        /* Sol Taraf: Görsel */
+        .image-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+
+        #anatomy-img {
+            max-height: 500px;
+            width: auto;
+            border-radius: 8px;
+            display: block;
+            border: 2px solid #bdc3c7;
+        }
+
+        .marker-dot {
+            position: absolute;
+            right: -6px;
+            width: 12px;
+            height: 12px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        /* Sağ Taraf: Hedef Kutuları */
+        .targets-column {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 500px;
+            z-index: 2;
+        }
+
+        .target-box {
+            width: 220px;
+            height: 50px;
+            border: 2px dashed #95a5a6;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #bdc3c7;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .target-number {
+            position: absolute;
+            left: -40px;
+            width: 30px;
+            height: 30px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .target-box.hovered {
+            background-color: #e8f6f3;
+            border-color: var(--success-color);
+            transform: scale(1.02);
+        }
+
+        .target-box.correct {
+            border-style: solid;
+            border-color: var(--success-color);
+            background-color: #d5f5e3;
+            color: var(--success-color);
+        }
+
+        .target-box.shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+            border-color: var(--accent-color);
+            background-color: #fadbd8;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Çizgiler */
+        #svg-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        line {
+            stroke: var(--primary-color);
+            stroke-width: 2;
+            stroke-dasharray: 5;
+            opacity: 0.6;
+        }
+
+        /* Sürüklenebilir Kavramlar */
+        .draggables-area {
+            margin-top: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            max-width: 800px;
+        }
+
+        .draggable-item {
+            padding: 12px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 25px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: 500;
+            transition: transform 0.2s, background 0.2s;
+            user-select: none;
+        }
+
+        .draggable-item:hover {
+            transform: translateY(-2px);
+            background-color: #34495e;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        
+        .draggable-item.placed {
+            display: none;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            border-top: 1px solid #bdc3c7;
+            padding-top: 10px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .badge-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .btn-restart {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-restart:hover {
+            background-color: #c0392b;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>İnsan Beyninin Kısımları</h1>
+            <div class="instruction">Kavramları rakamların üzerine sürükleyerek bırakın.</div>
+        </div>
+        <div class="timer-badge">
+            <span>⏱</span>
+            <span id="timer">00:00</span>
+        </div>
+    </header>
+
+    <div class="game-container">
+        <svg id="svg-lines"></svg>
+
+        <div class="image-wrapper" id="img-wrapper">
+            <img src="beyin.jpg" alt="Beyin Anatomisi" id="anatomy-img">
+            
+            <div class="marker-dot" id="dot-1" style="top: 12%;"></div> <div class="marker-dot" id="dot-2" style="top: 20%;"></div> <div class="marker-dot" id="dot-3" style="top: 32%;"></div> <div class="marker-dot" id="dot-4" style="top: 44%;"></div> <div class="marker-dot" id="dot-5" style="top: 50%;"></div> <div class="marker-dot" id="dot-6" style="top: 56%;"></div> <div class="marker-dot" id="dot-7" style="top: 65%;"></div> </div>
+
+        <div class="targets-column">
+            <div class="target-box" data-id="1"><div class="target-number">1</div><span>Buraya Bırak</span></div>
+            <div class="target-box" data-id="2"><div class="target-number">2</div><span>Buraya Bırak</span></div>
+            <div class="target-box" data-id="3"><div class="target-number">3</div><span>Buraya Bırak</span></div>
+            <div class="target-box" data-id="4"><div class="target-number">4</div><span>Buraya Bırak</span></div>
+            <div class="target-box" data-id="5"><div class="target-number">5</div><span>Buraya Bırak</span></div>
+            <div class="target-box" data-id="6"><div class="target-number">6</div><span>Buraya Bırak</span></div>
+            <div class="target-box" data-id="7"><div class="target-number">7</div><span>Buraya Bırak</span></div>
+        </div>
+    </div>
+
+    <div class="draggables-area" id="draggables-container">
+        </div>
+
+    <footer>
+        Tasarlayan: Naci Karhan
+    </footer>
+
+    <div class="modal-overlay" id="result-modal">
+        <div class="modal-content">
+            <div class="badge-icon" id="modal-icon">🏆</div>
+            <h2 id="modal-title">Tebrikler!</h2>
+            <p id="modal-msg">Tüm kısımları doğru eşleştirdiniz.</p>
+            <div id="result-time" style="font-size: 1.1rem; color:#e67e22; margin-top:5px;"></div>
+            <div id="score-text" style="font-weight:bold; margin: 10px 0; color: #2c3e50;"></div>
+            <button class="btn-restart" onclick="resetGame()">Tekrar Oynat</button>
+        </div>
+    </div>
+
+    <script>
+        // Veri Seti (5. madde güncellendi)
+        const data = [
+            { id: 1, text: "Deri" },
+            { id: 2, text: "Kafatası Zarı" },
+            { id: 3, text: "Kafatası Kemiği" },
+            { id: 4, text: "Kemik Zarı" },
+            { id: 5, text: "Sert Zar" }, 
+            { id: 6, text: "Örümceksi Zar" },
+            { id: 7, text: "İnce Zar" }
+        ];
+
+        // Ses Efektleri (Base64 encoded for portability)
+        const sounds = {
+            correct: new Audio("data:audio/wav;base64,UklGRi4AAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="), // Placeholder: Tarayıcı varsayılanı kullanır veya sessiz kalır, aşağıda Web Audio API ile gerçek ses üreteceğiz.
+        };
+
+        // Web Audio API Context (Daha güvenilir sesler için)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                // Pozitif "Ding" sesi (Yüksek frekans, azalan ses)
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'wrong') {
+                // Negatif "Buzz" sesi (Testere dişi, düşük frekans)
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                oscillator.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'win') {
+                // Alkış benzeri veya zafer melodisi
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                oscillator.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+                oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 1);
+            }
+        }
+
+        let wrongAttempts = 0;
+        let correctCount = 0;
+        const totalItems = data.length;
+        
+        // Kronometre Değişkenleri
+        let startTime;
+        let timerInterval;
+        let isGameActive = false;
+
+        window.onload = function() {
+            initGame();
+            drawLines();
+            window.addEventListener('resize', drawLines);
+        };
+
+        function startTimer() {
+            if(isGameActive) return;
+            isGameActive = true;
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isGameActive = false;
+        }
+
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = `${minutes}:${seconds}`;
+        }
+
+        function resetTimer() {
+            stopTimer();
+            document.getElementById('timer').innerText = "00:00";
+        }
+
+        function initGame() {
+            resetTimer();
+            // İlk hamlede sayacı başlatmak için bayrağı sıfırla ama aktif etme
+            // Ancak kullanıcı "Tekrar Oynat" dediğinde sayaç hemen başlasa daha iyi mi? 
+            // Hayır, ilk sürüklemede başlasın.
+            
+            const container = document.getElementById('draggables-container');
+            container.innerHTML = '';
+            
+            const shuffled = [...data].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(item => {
+                const el = document.createElement('div');
+                el.classList.add('draggable-item');
+                el.setAttribute('draggable', 'true');
+                el.setAttribute('data-id', item.id);
+                el.innerText = item.text;
+                
+                el.addEventListener('dragstart', dragStart);
+                container.appendChild(el);
+            });
+
+            const targets = document.querySelectorAll('.target-box');
+            targets.forEach(target => {
+                target.innerText = "";
+                const numDiv = document.createElement('div');
+                numDiv.className = 'target-number';
+                numDiv.innerText = target.getAttribute('data-id');
+                target.appendChild(numDiv);
+                
+                const span = document.createElement('span');
+                span.innerText = "Buraya Bırak";
+                target.appendChild(span);
+
+                target.classList.remove('correct', 'shake');
+                target.style.backgroundColor = "#f9f9f9";
+                target.style.borderColor = "#95a5a6";
+
+                target.addEventListener('dragover', dragOver);
+                target.addEventListener('dragleave', dragLeave);
+                target.addEventListener('drop', drop);
+            });
+
+            wrongAttempts = 0;
+            correctCount = 0;
+            document.getElementById('result-modal').style.display = 'none';
+        }
+
+        function drawLines() {
+            const svg = document.getElementById('svg-lines');
+            svg.innerHTML = ''; 
+            const gameContainerRect = document.querySelector('.game-container').getBoundingClientRect();
+
+            for (let i = 1; i <= 7; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                const target = document.querySelector(`.target-box[data-id="${i}"] .target-number`);
+                
+                if(dot && target) {
+                    const dotRect = dot.getBoundingClientRect();
+                    const targetRect = target.getBoundingClientRect();
+
+                    const x1 = dotRect.right - gameContainerRect.left;
+                    const y1 = (dotRect.top + dotRect.height / 2) - gameContainerRect.top;
+                    
+                    const x2 = targetRect.left - gameContainerRect.left;
+                    const y2 = (targetRect.top + targetRect.height / 2) - gameContainerRect.top;
+
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', x1);
+                    line.setAttribute('y1', y1);
+                    line.setAttribute('x2', x2);
+                    line.setAttribute('y2', y2);
+                    svg.appendChild(line);
+                }
+            }
+        }
+
+        function dragStart(e) {
+            // Oyun başlamadıysa ilk sürüklemede başlat
+            if(!isGameActive && correctCount === 0 && wrongAttempts === 0) {
+                startTimer();
+            }
+            e.dataTransfer.setData('text/plain', e.target.getAttribute('data-id'));
+            e.dataTransfer.effectAllowed = "move";
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+            const target = e.target.closest('.target-box');
+            if (target && !target.classList.contains('correct')) {
+                target.classList.add('hovered');
+            }
+        }
+
+        function dragLeave(e) {
+            const target = e.target.closest('.target-box');
+            if (target) {
+                target.classList.remove('hovered');
+            }
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            const target = e.target.closest('.target-box');
+            target.classList.remove('hovered');
+
+            if (target.classList.contains('correct')) return;
+
+            const draggedId = e.dataTransfer.getData('text/plain');
+            const targetId = target.getAttribute('data-id');
+            const draggedElement = document.querySelector(`.draggable-item[data-id="${draggedId}"]`);
+
+            if (draggedId === targetId) {
+                // DOĞRU
+                playTone('correct'); // SES
+                
+                target.classList.add('correct');
+                target.style.backgroundColor = "#d5f5e3";
+                target.innerHTML = ''; 
+                
+                const numDiv = document.createElement('div');
+                numDiv.className = 'target-number';
+                numDiv.innerText = targetId;
+                numDiv.style.backgroundColor = "#27ae60";
+                target.appendChild(numDiv);
+
+                const textSpan = document.createElement('span');
+                textSpan.innerText = draggedElement.innerText;
+                textSpan.style.color = "#27ae60";
+                target.appendChild(textSpan);
+
+                draggedElement.classList.add('placed');
+                correctCount++;
+                checkGameEnd();
+
+            } else {
+                // YANLIŞ
+                playTone('wrong'); // SES
+                
+                wrongAttempts++;
+                target.classList.add('shake');
+                target.style.borderColor = "#e74c3c";
+                setTimeout(() => {
+                    target.classList.remove('shake');
+                    target.style.borderColor = "#95a5a6";
+                }, 500);
+            }
+        }
+
+        function checkGameEnd() {
+            if (correctCount === totalItems) {
+                stopTimer();
+                setTimeout(showModal, 300); // Biraz bekle sonra göster
+                setTimeout(() => playTone('win'), 300); // Zafer sesi
+            }
+        }
+
+        function showModal() {
+            const modal = document.getElementById('result-modal');
+            const title = document.getElementById('modal-title');
+            const msg = document.getElementById('modal-msg');
+            const icon = document.getElementById('modal-icon');
+            const scoreText = document.getElementById('score-text');
+            const timeText = document.getElementById('result-time');
+            const finalTime = document.getElementById('timer').innerText;
+
+            let accuracy = Math.round((totalItems / (totalItems + wrongAttempts)) * 100);
+
+            scoreText.innerText = `Başarı Oranı: %${accuracy}`;
+            timeText.innerText = `Süre: ${finalTime}`;
+
+            if (accuracy >= 50) {
+                icon.innerText = "🧠";
+                title.innerText = "Tebrikler!";
+                msg.innerText = "Konuya hakimsin, harika bir iş çıkardın.";
+                title.style.color = "#27ae60";
+            } else {
+                icon.innerText = "📚";
+                title.innerText = "Tekrar Denemelisin";
+                msg.innerText = "Biraz daha çalışıp tekrar dene, başarabilirsin!";
+                title.style.color = "#e67e22";
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function resetGame() {
+            initGame();
+        }
+    </script>
+</body>
+</html>
